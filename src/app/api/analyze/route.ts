@@ -65,6 +65,7 @@ export interface TradeAnalysis {
   losingTrades: number;
   winRate: number;
   totalPnL: number;
+  payoff: number;
   grossProfit: number;
   grossLoss: number;
   profitFactor: number;
@@ -206,6 +207,12 @@ function buildAnalysis(
     trades.length > 0
       ? trades.reduce((s, t) => s + t.durationMin, 0) / trades.length
       : 0;
+
+  // Payoff (razão): média dos ganhos dividido pela média absoluta das perdas
+  const payoff =
+    losses.length > 0
+      ? parseFloat((avgWin / Math.abs(avgLoss)).toFixed(2))
+      : parseFloat(avgWin.toFixed(2));
 
   // By asset
   const assetMap = new Map<
@@ -356,6 +363,7 @@ function buildAnalysis(
     winningTrades: wins.length,
     losingTrades: losses.length,
     winRate: parseFloat(winRate.toFixed(1)),
+    payoff,
     totalPnL: parseFloat(totalPnL.toFixed(2)),
     grossProfit: parseFloat(grossProfit.toFixed(2)),
     grossLoss: parseFloat(grossLoss.toFixed(2)),

@@ -75,6 +75,12 @@ export function KpiGrid({ data }: Props) {
         positive={data.profitFactor >= 1}
       />
       <StatCard
+        label="Payoff"
+        value={`${data.payoff >= 0 ? "+" : ""}$${data.payoff.toFixed(2)}`}
+        sub="Expectativa por trade"
+        positive={data.payoff >= 0}
+      />
+      <StatCard
         label="Melhor ativo"
         value={data.bestAsset}
         sub={`Melhor hora: ${data.bestHour}`}

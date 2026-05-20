@@ -1,20 +1,49 @@
 "use client";
 
-import { ChartLine } from "@phosphor-icons/react";
-import FileUpload from "./components/FileUpload";
+import { useTradeAnalysis } from "@/hooks/useTradeAnalysis";
+import { ChartLineIcon } from "@phosphor-icons/react";
+import { useEffect } from "react";
+import useAnalysisStore from "@/stores/useAnalysisStore";
 import AnalyzingLoader from "./components/AnalyzingLoader";
 import Dashboard from "./components/Dashboard";
-import { useTradeAnalysis } from "@/hooks/useTradeAnalysis";
+import FileUpload from "./components/FileUpload";
 
 export default function Home() {
   const { state, data, errorMessage, analyze, reset } = useTradeAnalysis();
+
+  useEffect(() => {
+    try {
+      const store = useAnalysisStore.getState();
+      // Already showing the dashboard — nothing to do.
+      if (store.state === "done") return;
+
+      // Zustand persist rehydrated the data but couldn't restore state
+      // (e.g. first render before merge runs on older hydration paths).
+      if (store.data) {
+        useAnalysisStore.setState({ state: "done" });
+        return;
+      }
+
+      // Fallback: migrate from legacy localStorage key.
+      const rawLegacy = localStorage.getItem("trading_feedback.analysis");
+      if (!rawLegacy) return;
+      const legacy = JSON.parse(rawLegacy);
+      const data = legacy?.data ?? legacy;
+      if (data && (data.traderName || data.totalTrades !== undefined)) {
+        useAnalysisStore.setState({ data, state: "done" });
+        localStorage.removeItem("trading_feedback.analysis");
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   return (
     <main className="min-h-screen flex flex-col">
       {/* Persistent top bar */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <ChartLine size={22} weight="duotone" className="text-accent" />
+          <ChartLineIcon size={22} weight="duotone" className="text-accent" />
           <span className="font-semibold text-foreground tracking-tight">
             Trading<span className="text-accent">Feedback</span>
           </span>
@@ -28,9 +57,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col">
         {state === "idle" && (
           <section className="flex-1 flex flex-col items-center justify-center px-4 py-16 gap-10">
-            {/* Hero */}
             <div className="text-center max-w-lg">
-              {/* Decorative lines */}
               <div className="flex items-center justify-center gap-3 mb-6">
                 <span className="h-px w-12 bg-linear-to-r from-transparent to-accent/60" />
                 <span className="text-xs font-mono text-accent/70 uppercase tracking-widest">
@@ -38,6 +65,7 @@ export default function Home() {
                 </span>
                 <span className="h-px w-12 bg-linear-to-l from-transparent to-accent/60" />
               </div>
+
               <h1 className="text-4xl sm:text-5xl font-bold leading-tight text-foreground">
                 Veja onde seu{" "}
                 <span className="bg-linear-to-r from-accent to-accent-secondary bg-clip-text text-transparent">
@@ -51,12 +79,10 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Upload */}
             <div className="w-full max-w-xl">
               <FileUpload onUpload={analyze} isLoading={false} />
             </div>
 
-            {/* Features */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl w-full">
               {[
                 { icon: "📈", label: "Curva de Capital" },
